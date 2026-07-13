@@ -1,0 +1,29 @@
+# config/motor_params.yaml
+# ROS2 parameter file for pi4_motor_control/motor_controller node
+#
+# Tune these to match your robot's hardware.
+# All GPIO pin numbers use BCM (Broadcom) numbering.
+
+motor_controller:
+  ros__parameters:
+
+    # ── Robot geometry ────────────────────────────────────────────────────────
+    wheel_base: 0.20          # metres — track width (distance between wheel centres)
+
+    # ── Speed limits ─────────────────────────────────────────────────────────
+    max_linear_speed: 0.5     # m/s
+    max_angular_speed: 2.0    # rad/s
+
+    # ── PWM ──────────────────────────────────────────────────────────────────
+    pwm_frequency: 1000       # Hz (1 kHz works well for L298N / DRV8833)
+
+    # ── GPIO pins (BCM numbering) — L298N default wiring ─────────────────────
+    #   Left motor
+    pin_ena: 12               # PWM enable pin (must support hardware PWM)
+    pin_in1: 20               # Direction A
+    pin_in2: 21               # Direction B
+
+    #   Right motor
+    pin_enb: 13               # PWM enable pin (must support hardware PWM)
+    pin_in3: 19               # Direction A
+    pin_in4: 26               # Direction B
