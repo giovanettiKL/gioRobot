@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """"""""""""""""""""""""""""""
 motor_controller_node.py
-ROS2 Humble — Raspberry Pi 5 Differential Drive Motor Controller
+ROS2 Jazzy — Raspberry Pi 5 Differential Drive Motor Controller
 
 Subscribes to /cmd_vel (geometry_msgs/Twist) and drives two motors
 via a PWM motor driver (e.g. L298N, DRV8833, TB6612FNG) using

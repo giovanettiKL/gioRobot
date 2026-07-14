@@ -1,4 +1,4 @@
-# pi5_motor_control — ROS2 Humble
+# pi5_motor_control — ROS2 Jazzy
 
 Differential drive motor controller for **Raspberry Pi 5** using `lgpio`.
 Subscribes to `/cmd_vel` (`geometry_msgs/Twist`) and drives two DC motors via
@@ -50,21 +50,21 @@ pi5_motor_control/
 ### 1 — System dependencies
 ```bash
 sudo apt update
-sudo apt install python3-lgpio ros-humble-desktop
+sudo apt install python3-lgpio ros-jazzy-desktop
 ```
 
 ### 2 — Create / source your workspace
 ```bash
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
+mkdir -p ~/ros_wrs/src
+cd ~/ros_wrs/src
 # Copy this package folder here:
 cp -r /path/to/pi5_motor_control .
 ```
 
 ### 3 — Build
 ```bash
-cd ~/ros2_ws
-source /opt/ros/humble/setup.bash
+cd ~/ros_wrs
+source /opt/ros/jazzy/setup.bash
 colcon build --packages-select pi5_motor_control
 source install/setup.bash
 ```
