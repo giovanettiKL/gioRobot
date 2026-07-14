@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 robot_action_node.py
-ROS2 Humble — Robot Action Client Node (Raspberry Pi 5 package)
+ROS2 Jazzy — Robot Action Client Node (Raspberry Pi 5 package)
 
 Publishes to /cmd_vel (geometry_msgs/Twist) to drive the motor_controller node.
 
@@ -20,7 +20,7 @@ Actions allow the caller to:
   - Cancel mid-motion
   - Receive a result (success / aborted)
 
-Because ROS2 Humble ships without a built-in "DriveDistance" action type,
+Because ROS2 Jazzy ships without a built-in "DriveDistance" action type,
 this node defines its own simple action using the standard action_msgs pattern
 via rclpy's action server, using only built-in message types.
 

@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer="pi5_user",
     maintainer_email="you@example.com",
-    description="Differential drive motor controller for Raspberry Pi 5 — ROS2 Humble",
+    description="Differential drive motor controller for Raspberry Pi 5 — ROS2 Jazzy",
     license="Apache-2.0",
     tests_require=["pytest"],
     entry_points={
