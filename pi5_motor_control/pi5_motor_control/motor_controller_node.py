@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""""""""""""""""""""""""""""""
+"""
 motor_controller_node.py
 ROS2 Jazzy — Raspberry Pi 5 Differential Drive Motor Controller
 
@@ -18,7 +18,7 @@ Wiring (L298N example):
 Install deps:
   sudo apt install python3-lgpio
   pip3 install lgpio   # if not available via apt
-"""""""""""""""""""""""""""
+"""
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
