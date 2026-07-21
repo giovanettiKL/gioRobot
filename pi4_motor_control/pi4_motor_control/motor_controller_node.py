@@ -140,20 +140,33 @@ class MotorControllerNode(Node):
     def _twist_to_duty(self, linear_x: float, angular_z: float):
         """
         Convert Twist → left/right duty cycle (%).
-        Uses simple differential-drive kinematics.
+
+        Arcade-style mixing: linear_x and angular_z are each normalised
+        against their own max (max_linear_speed / max_angular_speed) and
+        combined directly in duty-percent space, instead of converting to
+        physical per-wheel m/s (using wheel_base) and normalising by
+        max_linear_speed. The physical-kinematics approach starves
+        rotate-in-place commands of torque on robots with a narrow
+        wheel_base: e.g. wheel_base=0.20m at angular_z=1.0 rad/s only
+        produces a ±0.1 m/s wheel-speed delta, which normalises down to
+        ~20% PWM duty — too weak to overcome motor/gearbox static
+        friction. Arcade mixing guarantees a full-speed pivot (angular_z
+        == max_angular_speed, linear_x == 0) reaches ±100% duty.
+        wheel_base is kept as a declared parameter for any future
+        odometry/kinematics use, but no longer feeds this duty mix.
         """
         # Clamp inputs
         linear_x  = max(-self.max_linear,  min(self.max_linear,  linear_x))
         angular_z = max(-self.max_angular, min(self.max_angular, angular_z))
 
-        # Wheel velocities (m/s)
-        v_left  = linear_x - (angular_z * self.wheel_base / 2.0)
-        v_right = linear_x + (angular_z * self.wheel_base / 2.0)
+        linear_frac  = (linear_x  / self.max_linear)  if self.max_linear  else 0.0
+        angular_frac = (angular_z / self.max_angular) if self.max_angular else 0.0
 
-        # Normalise to duty % using max_linear as scale
-        max_v = max(self.max_linear, abs(v_left), abs(v_right))  # avoid div/0
-        left_duty  = (v_left  / max_v) * 100.0
-        right_duty = (v_right / max_v) * 100.0
+        left_duty  = (linear_frac - angular_frac) * 100.0
+        right_duty = (linear_frac + angular_frac) * 100.0
+
+        left_duty  = max(-100.0, min(100.0, left_duty))
+        right_duty = max(-100.0, min(100.0, right_duty))
 
         return left_duty, right_duty
 
