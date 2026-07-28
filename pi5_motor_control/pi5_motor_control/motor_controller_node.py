@@ -24,6 +24,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray
+from motor_control_interfaces.msg import MotorCommand
 import math
 
 # Try to import lgpio; fall back to a mock for development on non-Pi hardware.
@@ -66,6 +67,7 @@ class MotorControllerNode(Node):
         self.declare_parameter("max_angular_speed", 2.0)  # rad/s
         self.declare_parameter("pwm_frequency", PWM_FREQ)
         self.declare_parameter("gpiochip", DEFAULT_GPIOCHIP)
+        self.declare_parameter("default_command_speed", 0.5)  # fraction of max, for /motor_command
 
         for pin_name, default in DEFAULT_PINS.items():
             self.declare_parameter(f"pin_{pin_name}", default)
@@ -75,6 +77,7 @@ class MotorControllerNode(Node):
         self.max_angular      = self.get_parameter("max_angular_speed").value
         self.pwm_freq         = self.get_parameter("pwm_frequency").value
         self.gpiochip         = self.get_parameter("gpiochip").value
+        self._command_speed   = self.get_parameter("default_command_speed").value
 
         self.pins = {k: self.get_parameter(f"pin_{k}").value for k in DEFAULT_PINS}
 
@@ -84,6 +87,12 @@ class MotorControllerNode(Node):
         # ── ROS interfaces ────────────────────────────────────────────────
         self.cmd_sub = self.create_subscription(
             Twist, "/cmd_vel", self._cmd_vel_callback, 10
+        )
+
+        # Discrete command interface: forward / backward / left / right /
+        # set_speed / stop. See motor_control_interfaces/msg/MotorCommand.msg.
+        self.motor_cmd_sub = self.create_subscription(
+            MotorCommand, "/motor_command", self._motor_command_callback, 10
         )
 
         # Publishes current duty cycles for monitoring / debugging
@@ -191,6 +200,43 @@ class MotorControllerNode(Node):
         )
 
         # Publish duty cycles for external monitoring
+        duty_msg = Float32MultiArray()
+        duty_msg.data = [float(left_duty), float(right_duty)]
+        self.duty_pub.publish(duty_msg)
+
+    def _motor_command_callback(self, msg: MotorCommand):
+        self._last_cmd_time = self.get_clock().now()
+
+        if msg.command == MotorCommand.STOP:
+            self._stop_all()
+            self.get_logger().debug("motor_command → STOP")
+            return
+
+        if msg.command == MotorCommand.SET_SPEED:
+            self._command_speed = max(0.0, min(1.0, msg.speed))
+            self.get_logger().debug(f"motor_command → SET_SPEED {self._command_speed:.2f}")
+            return
+
+        if msg.speed > 0.0:
+            self._command_speed = max(0.0, min(1.0, msg.speed))
+        speed = self._command_speed
+
+        if msg.command == MotorCommand.FORWARD:
+            linear_x, angular_z = speed * self.max_linear, 0.0
+        elif msg.command == MotorCommand.BACKWARD:
+            linear_x, angular_z = -speed * self.max_linear, 0.0
+        elif msg.command == MotorCommand.LEFT:
+            linear_x, angular_z = 0.0, speed * self.max_angular
+        elif msg.command == MotorCommand.RIGHT:
+            linear_x, angular_z = 0.0, -speed * self.max_angular
+        else:
+            self.get_logger().error(f"Unknown MotorCommand.command={msg.command}")
+            return
+
+        left_duty, right_duty = self._twist_to_duty(linear_x, angular_z)
+        self._set_motor(self.pins["ena"], self.pins["in1"], self.pins["in2"], left_duty)
+        self._set_motor(self.pins["enb"], self.pins["in3"], self.pins["in4"], right_duty)
+
         duty_msg = Float32MultiArray()
         duty_msg.data = [float(left_duty), float(right_duty)]
         self.duty_pub.publish(duty_msg)

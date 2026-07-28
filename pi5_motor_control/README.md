@@ -92,6 +92,46 @@ ros2 run pi5_motor_control motor_controller \
 
 ---
 
+## Discrete motor commands (`/motor_command`)
+
+For simple discrete moves — forward, backward, turn left, turn right, set
+speed, stop — instead of continuous `Twist` velocities, `motor_controller_node`
+also subscribes to `/motor_command`
+(`motor_control_interfaces/msg/MotorCommand`), a single message type covering
+all five actions:
+
+```
+uint8 FORWARD=0
+uint8 BACKWARD=1
+uint8 LEFT=2
+uint8 RIGHT=3
+uint8 SET_SPEED=4
+uint8 STOP=5
+
+uint8 command      # one of the constants above
+float32 speed       # fraction of max speed, 0.0-1.0 (0 = keep current default)
+```
+
+`robot_action_node` is the broadcaster: it subscribes to a plain-text topic
+`/motor_command_text` (`std_msgs/String`) and republishes each word as a
+`MotorCommand` on `/motor_command`.
+
+```bash
+ros2 topic pub /motor_command_text std_msgs/msg/String "data: 'forward'" --once
+ros2 topic pub /motor_command_text std_msgs/msg/String "data: 'left'" --once
+ros2 topic pub /motor_command_text std_msgs/msg/String "data: 'set_speed 0.8'" --once
+ros2 topic pub /motor_command_text std_msgs/msg/String "data: 'stop'" --once
+
+# Or publish MotorCommand directly:
+ros2 topic pub /motor_command motor_control_interfaces/msg/MotorCommand \
+  "{command: 0, speed: 0.6}" --once   # FORWARD at 60%
+```
+
+Like `/cmd_vel`, `/motor_command` is covered by the same 0.5 s watchdog — the
+robot stops automatically if commands stop arriving.
+
+---
+
 ## Testing without hardware
 
 The node detects a missing `lgpio` import automatically and enters

@@ -14,6 +14,9 @@ motor_controller:
     max_linear_speed: 0.5     # m/s
     max_angular_speed: 2.0    # rad/s
 
+    # ── Discrete /motor_command interface ───────────────────────────────────
+    default_command_speed: 0.5   # fraction of max (0.0-1.0), until a SET_SPEED arrives
+
     # ── PWM ──────────────────────────────────────────────────────────────────
     pwm_frequency: 1000       # Hz (1 kHz works well for L298N / DRV8833)
 

@@ -50,6 +50,7 @@ from rclpy.executors import MultiThreadedExecutor
 
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+from motor_control_interfaces.msg import MotorCommand
 
 import time
 import threading
@@ -76,6 +77,16 @@ COMMANDS = {
     "left":     ( 0.0,  1.0),
     "right":    ( 0.0, -1.0),
     "stop":     ( 0.0,  0.0),
+}
+
+# Word → MotorCommand.command, for the /motor_command_text broadcaster below.
+MOTOR_COMMAND_WORDS = {
+    "forward":   MotorCommand.FORWARD,
+    "backward":  MotorCommand.BACKWARD,
+    "left":      MotorCommand.LEFT,
+    "right":     MotorCommand.RIGHT,
+    "set_speed": MotorCommand.SET_SPEED,
+    "stop":      MotorCommand.STOP,
 }
 
 
@@ -118,6 +129,14 @@ class RobotActionNode(Node):
             String, "/drive_command", self._command_callback, 10
         )
 
+        # Discrete motor-command broadcaster: translates plain-text words into
+        # MotorCommand messages on /motor_command, which motor_controller_node
+        # listens to directly (no /cmd_vel Twist mixing involved).
+        self.motor_cmd_pub = self.create_publisher(MotorCommand, "/motor_command", 10)
+        self.motor_cmd_text_sub = self.create_subscription(
+            String, "/motor_command_text", self._motor_command_text_callback, 10
+        )
+
         # ── Internal state ────────────────────────────────────────────────
         self._active_goal   = None
         self._cancel_flag   = False
@@ -129,6 +148,7 @@ class RobotActionNode(Node):
         self.get_logger().info("  Cancel          : /drive_cancel")
         self.get_logger().info("  Feedback        : /drive_feedback  (subscribe)")
         self.get_logger().info("  Result          : /drive_result    (subscribe)")
+        self.get_logger().info("  Motor command   : /motor_command_text  (forward/backward/left/right/set_speed <0-1>/stop)")
 
         # ── Optional demo sequence ────────────────────────────────────────
         if self.demo_on_start:
@@ -289,6 +309,38 @@ class RobotActionNode(Node):
             args=(linear, angular, duration, command),
             daemon=True
         ).start()
+
+    # ── Motor command broadcaster ─────────────────────────────────────────────
+
+    def _motor_command_text_callback(self, msg: String):
+        """
+        Accepts plain-text words and republishes them as MotorCommand on
+        /motor_command:
+          "forward"          — drive forward at the current default speed
+          "backward"         — drive backward at the current default speed
+          "left"             — turn left (pivot) at the current default speed
+          "right"            — turn right (pivot) at the current default speed
+          "set_speed 0.7"    — set the default speed to 70% of max
+          "stop"             — stop immediately
+        """
+        parts = msg.data.strip().split()
+        if not parts:
+            return
+
+        word = parts[0].lower()
+        if word not in MOTOR_COMMAND_WORDS:
+            self.get_logger().error(
+                f"Unknown motor command '{word}'. Valid: {list(MOTOR_COMMAND_WORDS.keys())}"
+            )
+            return
+
+        cmd = MotorCommand()
+        cmd.command = MOTOR_COMMAND_WORDS[word]
+        if len(parts) > 1:
+            cmd.speed = float(parts[1])
+
+        self.motor_cmd_pub.publish(cmd)
+        self.get_logger().info(f"motor_command → {word} {cmd.speed if len(parts) > 1 else ''}".strip())
 
     # ── Demo sequence ─────────────────────────────────────────────────────────
 
