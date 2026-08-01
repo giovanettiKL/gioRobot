@@ -222,18 +222,17 @@ class MotorControllerNode(Node):
         speed = self._command_speed
 
         if msg.command == MotorCommand.FORWARD:
-            linear_x, angular_z = speed * self.max_linear, 0.0
+            left_duty, right_duty = speed * 100.0, speed * 100.0
         elif msg.command == MotorCommand.BACKWARD:
-            linear_x, angular_z = -speed * self.max_linear, 0.0
+            left_duty, right_duty = -speed * 100.0, -speed * 100.0
         elif msg.command == MotorCommand.LEFT:
-            linear_x, angular_z = 0.0, speed * self.max_angular
+            left_duty, right_duty = -speed * 100.0, speed * 100.0
         elif msg.command == MotorCommand.RIGHT:
-            linear_x, angular_z = 0.0, -speed * self.max_angular
+            left_duty, right_duty = speed * 100.0, -speed * 100.0
         else:
             self.get_logger().error(f"Unknown MotorCommand.command={msg.command}")
             return
 
-        left_duty, right_duty = self._twist_to_duty(linear_x, angular_z)
         self._set_motor(self.pins["ena"], self.pins["in1"], self.pins["in2"], left_duty)
         self._set_motor(self.pins["enb"], self.pins["in3"], self.pins["in4"], right_duty)
 
