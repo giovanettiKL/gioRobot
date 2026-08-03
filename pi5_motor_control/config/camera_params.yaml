@@ -1,0 +1,22 @@
+# camera_params.yaml
+# ROS2 parameter file for pi5_motor_control/camera_node
+#
+# Tune these to match your camera and use case (Camera Module 3 - 12MP AF).
+
+camera_node:
+  ros__parameters:
+
+    # ── Stream resolution / rate ────────────────────────────────────────────
+    width: 640
+    height: 480
+    framerate: 30.0
+
+    # ── Frame metadata ───────────────────────────────────────────────────────
+    frame_id: camera_link
+
+    # ── Autofocus (IMX708 sensor) ────────────────────────────────────────────
+    # continuous — camera continuously refocuses
+    # auto       — single autofocus sweep triggered once at startup
+    # manual     — fixed focus at lens_position dioptres (0.0 = infinity)
+    autofocus_mode: continuous
+    lens_position: 0.0

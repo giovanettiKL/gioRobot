@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "motor_controller   = pi5_motor_control.motor_controller_node:main",
             "robot_action_node  = pi5_motor_control.robot_action_node:main",
+            "camera_node        = pi5_motor_control.camera_node:main",
         ],
     },
 )

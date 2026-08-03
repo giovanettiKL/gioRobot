@@ -132,6 +132,37 @@ robot stops automatically if commands stop arriving.
 
 ---
 
+## Camera (`camera_node`)
+
+Publishes frames from a **Raspberry Pi Camera Module 3 (12MP, autofocus)** via
+`picamera2`/`libcamera` — same rationale as `lgpio` for motors: the legacy
+`picamera`/`raspistill` stack doesn't support the IMX708 sensor on Pi 5.
+
+```bash
+sudo apt install python3-picamera2 python3-libcamera ros-jazzy-cv-bridge
+
+ros2 launch pi5_motor_control camera.launch.py
+```
+
+Publishes:
+- `/camera/image_raw` (`sensor_msgs/Image`, `bgr8`)
+- `/camera/camera_info` (`sensor_msgs/CameraInfo`, uncalibrated placeholder)
+
+Key parameters (`config/camera_params.yaml`):
+
+| Parameter         | Default      | Description                                   |
+|-------------------|--------------|------------------------------------------------|
+| `width`/`height`  | 640/480      | Capture resolution                              |
+| `framerate`       | 30.0         | Frames per second                               |
+| `autofocus_mode`  | `continuous` | `continuous` \| `auto` \| `manual`              |
+| `lens_position`   | 0.0          | Fixed focus (dioptres) when `autofocus_mode: manual`; 0.0 = infinity |
+
+Like `motor_controller_node`, it detects a missing `picamera2` import and
+falls back to **SIMULATION mode**, publishing a synthetic test pattern so it
+runs on any machine without a Pi camera attached.
+
+---
+
 ## Testing without hardware
 
 The node detects a missing `lgpio` import automatically and enters
