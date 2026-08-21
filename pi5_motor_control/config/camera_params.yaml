@@ -14,6 +14,10 @@ camera_node:
     # ── Frame metadata ───────────────────────────────────────────────────────
     frame_id: camera_link
 
+    # ── Camera selection ─────────────────────────────────────────────────────
+    # Pi 5 has two CSI ports; this is CAM0 — Camera Module 3.
+    camera_num: 0
+
     # ── Autofocus (IMX708 sensor) ────────────────────────────────────────────
     # continuous — camera continuously refocuses
     # auto       — single autofocus sweep triggered once at startup

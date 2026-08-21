@@ -59,6 +59,7 @@ class CameraNode(Node):
         self.declare_parameter("height", 480)
         self.declare_parameter("framerate", 30.0)
         self.declare_parameter("frame_id", "camera_link")
+        self.declare_parameter("camera_num", 0)                 # which CSI port/libcamera index to open: 0 or 1 (Pi 5 has two)
         self.declare_parameter("has_autofocus", True)           # False for lenses/sensors with no AF motor (e.g. HQ Camera + manual-focus lens)
         self.declare_parameter("autofocus_mode", "continuous")  # continuous|auto|manual (ignored if has_autofocus is False)
         self.declare_parameter("lens_position", 0.0)            # dioptres, manual AF mode only
@@ -67,6 +68,7 @@ class CameraNode(Node):
         self.height         = self.get_parameter("height").value
         self.framerate      = self.get_parameter("framerate").value
         self.frame_id       = self.get_parameter("frame_id").value
+        self.camera_num     = self.get_parameter("camera_num").value
         self.has_autofocus  = self.get_parameter("has_autofocus").value
         self.autofocus_mode = self.get_parameter("autofocus_mode").value
         self.lens_position  = self.get_parameter("lens_position").value
@@ -89,8 +91,8 @@ class CameraNode(Node):
         self.create_timer(1.0 / self.framerate, self._capture_callback)
 
         self.get_logger().info(
-            f"CameraNode ready  |  {self.width}x{self.height}@{self.framerate:.0f}fps  "
-            f"|  af={self.autofocus_mode}  |  sim={'YES' if SIMULATION else 'NO'}"
+            f"CameraNode ready  |  cam{self.camera_num}  |  {self.width}x{self.height}@{self.framerate:.0f}fps  "
+            f"|  af={self.autofocus_mode if self.has_autofocus else 'manual'}  |  sim={'YES' if SIMULATION else 'NO'}"
         )
 
     # ── Camera helpers ────────────────────────────────────────────────────────
@@ -101,7 +103,7 @@ class CameraNode(Node):
             self._sim_frame_count = 0
             return
 
-        self.picam2 = Picamera2()
+        self.picam2 = Picamera2(camera_num=self.camera_num)
         config = self.picam2.create_video_configuration(
             main={"size": (self.width, self.height), "format": "RGB888"}
         )
