@@ -1,0 +1,38 @@
+# camera_params_hq.yaml
+# ROS2 parameter file for pi5_motor_control/camera_node
+#
+# Raspberry Pi HQ Camera (Sony IMX477) + official RPi 6mm CS-mount lens.
+#
+# This lens has NO autofocus and NO auto-iris — focus and aperture are set
+# by hand on two rings on the lens barrel. Lock both rings (set screws) once
+# dialed in; vibration from the robot can drift them over time.
+#
+# Wide-angle lens: ~66° horizontal / 51° vertical / 90°+ diagonal FOV on the
+# IMX477 sensor. Expect real distortion near the frame edges — if you use
+# this feed for anything beyond streaming (object distance, SLAM, AR
+# overlays), run a proper checkerboard calibration for this specific lens
+# (ros2 run camera_calibration cameracalibrator) and populate CameraInfo's
+# K/D/P, which camera_node.py currently leaves empty.
+#
+# To switch cameras:
+#   ros2 launch pi5_motor_control camera.launch.py params_file:=config/camera_params.yaml     # Camera Module 3
+#   ros2 launch pi5_motor_control camera.launch.py params_file:=config/camera_params_hq.yaml   # HQ Camera
+
+camera_node:
+  ros__parameters:
+
+    # ── Stream resolution / rate ────────────────────────────────────────────
+    # IMX477 max is 4056x3040 — raise these if you need full resolution;
+    # 640x480 is fine for a quick sanity check with the default binned mode.
+    width: 640
+    height: 480
+    framerate: 30.0
+
+    # ── Frame metadata ───────────────────────────────────────────────────────
+    frame_id: camera_link
+
+    # ── Autofocus ────────────────────────────────────────────────────────────
+    # HQ Camera + RPi 6mm lens has no AF motor — must be False, or
+    # set_controls({"AfMode": ...}) will raise (control doesn't exist on
+    # this hardware). autofocus_mode/lens_position are ignored when False.
+    has_autofocus: false

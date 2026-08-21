@@ -17,6 +17,11 @@ Camera Module 3 autofocus:
     continuous — camera continuously refocuses (default)
     auto       — single autofocus sweep triggered once at startup
     manual     — fixed focus at 'lens_position' dioptres (0.0 = infinity)
+
+Other cameras (e.g. HQ Camera + manual-focus lens):
+  Set 'has_autofocus' to False to skip AF control calls entirely — required
+  for sensors/lenses with no AF motor, where focus (and iris, on lenses that
+  have one) is set by hand on the lens barrel. See camera_params_hq.yaml.
 """
 import numpy as np
 import rclpy
@@ -54,13 +59,15 @@ class CameraNode(Node):
         self.declare_parameter("height", 480)
         self.declare_parameter("framerate", 30.0)
         self.declare_parameter("frame_id", "camera_link")
-        self.declare_parameter("autofocus_mode", "continuous")  # continuous|auto|manual
-        self.declare_parameter("lens_position", 0.0)            # dioptres, manual mode only
+        self.declare_parameter("has_autofocus", True)           # False for lenses/sensors with no AF motor (e.g. HQ Camera + manual-focus lens)
+        self.declare_parameter("autofocus_mode", "continuous")  # continuous|auto|manual (ignored if has_autofocus is False)
+        self.declare_parameter("lens_position", 0.0)            # dioptres, manual AF mode only
 
         self.width          = self.get_parameter("width").value
         self.height         = self.get_parameter("height").value
         self.framerate      = self.get_parameter("framerate").value
         self.frame_id       = self.get_parameter("frame_id").value
+        self.has_autofocus  = self.get_parameter("has_autofocus").value
         self.autofocus_mode = self.get_parameter("autofocus_mode").value
         self.lens_position  = self.get_parameter("lens_position").value
 
@@ -100,6 +107,15 @@ class CameraNode(Node):
         )
         self.picam2.configure(config)
         self.picam2.start()
+
+        if not self.has_autofocus:
+            # Manual-focus lens/sensor (e.g. HQ Camera + RPi 6mm CS-mount lens) —
+            # no AfMode control exists on this hardware; focus and iris are set
+            # by hand on the lens barrel. Skip the AF control calls entirely.
+            self.get_logger().info(
+                "has_autofocus=False — skipping AF controls (manual focus/iris lens)"
+            )
+            return
 
         af_mode = getattr(controls.AfModeEnum, AF_MODE_MAP[self.autofocus_mode])
         if self.autofocus_mode == "manual":
