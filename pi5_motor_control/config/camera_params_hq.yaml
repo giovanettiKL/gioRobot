@@ -32,8 +32,10 @@ camera_node:
     frame_id: camera_link
 
     # ── Camera selection ─────────────────────────────────────────────────────
-    # Pi 5 has two CSI ports; this is CAM1 — HQ Camera + RPi 6mm lens.
-    camera_num: 1
+    # libcamera index for the HQ Camera (imx477) — confirmed via
+    # `rpicam-hello --list-cameras` after physically swapping cable ports
+    # during troubleshooting. Re-verify with that command if cables move again.
+    camera_num: 0
 
     # ── Autofocus ────────────────────────────────────────────────────────────
     # HQ Camera + RPi 6mm lens has no AF motor — must be False, or
