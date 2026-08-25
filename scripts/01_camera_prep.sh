@@ -14,7 +14,12 @@ sudo apt update
 sudo apt install -y git pkg-config meson ninja-build cmake python3-dev pybind11-dev
 
 echo "==> Installing libcamera build dependencies"
-sudo apt install -y libboost-dev libgnutls28-dev libssl-dev openssl libtiff-dev \
+# Note: deliberately not installing libgnutls28-dev — it pulls in a chain of
+# -dev packages (libidn2-dev, libp11-kit-dev, libpcre2-dev, libselinux1-dev,
+# nettle-dev) that can hit archive version-skew errors. libcamera's meson
+# build falls back to OpenSSL's libcrypto for IPA module signing when GnuTLS
+# isn't present, and libssl-dev/openssl below cover that fine.
+sudo apt install -y libboost-dev libssl-dev openssl libtiff-dev \
     libglib2.0-dev libgstreamer-plugins-base1.0-dev
 
 echo "==> Installing Python modules needed by libcamera's build system"
