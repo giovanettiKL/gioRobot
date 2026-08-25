@@ -19,8 +19,13 @@ echo "==> Installing libcamera build dependencies"
 # nettle-dev) that can hit archive version-skew errors. libcamera's meson
 # build falls back to OpenSSL's libcrypto for IPA module signing when GnuTLS
 # isn't present, and libssl-dev/openssl below cover that fine.
-sudo apt install -y libboost-dev libssl-dev openssl libtiff-dev \
-    libglib2.0-dev libgstreamer-plugins-base1.0-dev
+#
+# Also deliberately not installing libglib2.0-dev / libgstreamer-plugins-base1.0-dev
+# (GStreamer support in libcamera — not needed since we use picamera2's Python
+# API directly, not GStreamer pipelines). glib pulls in libpcre2-dev, which
+# hits the same archive version-skew issue as gnutls did. Build with
+# -Dgstreamer=disabled instead (see 02_camera_build.sh).
+sudo apt install -y libboost-dev libssl-dev openssl libtiff-dev
 
 echo "==> Installing Python modules needed by libcamera's build system"
 sudo apt install -y python3-ply python3-yaml

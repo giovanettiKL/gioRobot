@@ -24,17 +24,21 @@ fi
 
 cd libcamera
 echo "==> Configuring libcamera build (rpi/vc4 + rpi/pisp pipelines, Python bindings)"
+# gstreamer=disabled deliberately: we use picamera2's Python API directly,
+# not GStreamer pipelines, and enabling it pulls in libglib2.0-dev, which
+# has been hitting archive version-skew errors on this system (see
+# 01_camera_prep.sh comments). Skipping it avoids that entirely.
 meson setup build --buildtype=release \
   -Dpipelines=rpi/vc4,rpi/pisp \
   -Dipas=rpi/vc4,rpi/pisp \
-  -Dv4l2=enabled -Dgstreamer=enabled \
+  -Dv4l2=enabled -Dgstreamer=disabled \
   -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=disabled \
   -Ddocumentation=disabled -Dpycamera=enabled \
   --reconfigure 2>/dev/null || \
 meson setup build --buildtype=release \
   -Dpipelines=rpi/vc4,rpi/pisp \
   -Dipas=rpi/vc4,rpi/pisp \
-  -Dv4l2=enabled -Dgstreamer=enabled \
+  -Dv4l2=enabled -Dgstreamer=disabled \
   -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=disabled \
   -Ddocumentation=disabled -Dpycamera=enabled
 
