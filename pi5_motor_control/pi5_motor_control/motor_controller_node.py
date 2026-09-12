@@ -48,8 +48,10 @@ DEFAULT_PINS = {
     "in4": 26,   # Right motor dir B
 }
 
-PWM_FREQ = 1000          # Hz — suitable for most DC motor drivers
+PWM_FREQ = 1000          # Hz — currently unused, see _setup_gpio note on tx_pwm
 CMD_VEL_TIMEOUT = 0.5    # seconds; stop motors if no command received
+ON_THRESHOLD = 1.0       # % duty above which the enable pin is driven HIGH
+                         # (plain on/off in place of true PWM — see _setup_gpio)
 DEFAULT_GPIOCHIP = 4     # Pi 5: the 40-pin header is exposed on gpiochip4 (RP1).
                          # Older Bookworm images may need 0 — override via the
                          # 'gpiochip' parameter if gpiochip_open(4) fails.
@@ -120,15 +122,31 @@ class MotorControllerNode(Node):
         for name in ("in1", "in2", "in3", "in4"):
             lgpio.gpio_claim_output(self.h, self.pins[name], 0)
 
-        # PWM pins are driven via lgpio's software-timed tx_pwm — do NOT
-        # claim them as plain outputs first, tx_pwm claims them itself.
-        lgpio.tx_pwm(self.h, self.pins["ena"], self.pwm_freq, 0)
-        lgpio.tx_pwm(self.h, self.pins["enb"], self.pwm_freq, 0)
+        # Enable pins: plain digital on/off, NOT lgpio's software-timed
+        # tx_pwm. tx_pwm was tested directly on this board (see git history
+        # around the "weak-torque pivot" and hardware debugging sessions):
+        # at every duty level tried, including a full 100%, tx_pwm produced
+        # no motor motion at all, while a plain gpio_write HIGH on the same
+        # pin reliably spun the motor. Root cause wasn't pinned down (likely
+        # an lgpio software-PWM timing/threading quirk on this Pi5), so
+        # until that's resolved, enable pins are driven as simple on/off.
+        # This sacrifices variable-speed control — any nonzero commanded
+        # duty runs the motor at full speed — in exchange for the motor
+        # actually moving. self.pwm_freq / pwm_frequency is kept as a
+        # declared parameter for when true PWM is restored, but is
+        # currently unused.
+        lgpio.gpio_claim_output(self.h, self.pins["ena"], 0)
+        lgpio.gpio_claim_output(self.h, self.pins["enb"], 0)
 
     def _set_motor(self, pwm_pin: int, in_a_pin: int, in_b_pin: int, duty: float):
         """
         Drive one motor.
         duty: -100.0 … +100.0  (negative = reverse)
+
+        NOTE: the enable pin (`pwm_pin`) is driven plain on/off, not true
+        PWM — see _setup_gpio for why. Any duty magnitude above
+        ON_THRESHOLD runs the motor at full speed; the exact percentage
+        beyond that threshold currently has no effect on speed.
         """
         duty = max(-100.0, min(100.0, duty))
         forward = duty >= 0
@@ -144,7 +162,7 @@ class MotorControllerNode(Node):
 
         lgpio.gpio_write(self.h, in_a_pin, 1 if forward else 0)
         lgpio.gpio_write(self.h, in_b_pin, 0 if forward else 1)
-        lgpio.tx_pwm(self.h, pwm_pin, self.pwm_freq, speed)
+        lgpio.gpio_write(self.h, pwm_pin, 1 if speed > ON_THRESHOLD else 0)
 
     def _stop_all(self):
         self._set_motor(self.pins["ena"], self.pins["in1"], self.pins["in2"], 0.0)
@@ -250,8 +268,8 @@ class MotorControllerNode(Node):
     def destroy_node(self):
         self._stop_all()
         if not SIMULATION:
-            lgpio.tx_pwm(self.h, self.pins["ena"], 0, 0)
-            lgpio.tx_pwm(self.h, self.pins["enb"], 0, 0)
+            lgpio.gpio_write(self.h, self.pins["ena"], 0)
+            lgpio.gpio_write(self.h, self.pins["enb"], 0)
             lgpio.gpiochip_close(self.h)
         super().destroy_node()
 
